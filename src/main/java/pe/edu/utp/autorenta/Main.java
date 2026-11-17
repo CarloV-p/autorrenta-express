@@ -1,3 +1,4 @@
+
 package pe.edu.utp.autorenta;
 
 /**
@@ -7,9 +8,18 @@ package pe.edu.utp.autorenta;
  * @author Burgos Huanca Luis Joseph
  * @author Chamorro Casani Oscar Gonzalo
  */
+
+import pe.edu.utp.autorenta.vista.swing.MainFrame;
+import javax.swing.SwingUtilities;
+
 public class Main {
 
     public static void main(String[] args) {
-        
+
+        SwingUtilities.invokeLater(() -> {
+            MainFrame ventana = new MainFrame("Administrador");
+            ventana.setVisible(true);
+        });
+
     }
 }
