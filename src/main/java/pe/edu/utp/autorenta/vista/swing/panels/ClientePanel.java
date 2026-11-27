@@ -1,6 +1,6 @@
+
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Gestión de clientes de AutoRenta Express.
  */
 
 package pe.edu.utp.autorenta.vista.swing.panels;
@@ -8,6 +8,10 @@ package pe.edu.utp.autorenta.vista.swing.panels;
 // @author Marlee Lucero Romero Pequeña
 
 import pe.edu.utp.autorenta.config.ConfiguracionApp;
+import pe.edu.utp.autorenta.config.ConexionBD;
+import pe.edu.utp.autorenta.domain.model.Cliente;
+import pe.edu.utp.autorenta.persistence.dao.ClienteDAO;
+import pe.edu.utp.autorenta.persistence.dao.impl.ClienteDAOImpl;
 import pe.edu.utp.autorenta.util.Validador;
 
 import javax.swing.*;
@@ -19,7 +23,6 @@ public class ClientePanel extends JPanel {
     private JTextField txtNombre;
     private JTextField txtDni;
     private JTextField txtTelefono;
-    private JTextField txtCorreo;
 
     private JTable tablaClientes;
     private DefaultTableModel modeloTabla;
@@ -28,35 +31,52 @@ public class ClientePanel extends JPanel {
     private JButton btnEliminar;
     private JButton btnLimpiar;
 
+    private final ClienteDAO clienteDAO;
+
     public ClientePanel() {
+        clienteDAO = new ClienteDAOImpl(new ConexionBD());
+
         configurarPanel();
         inicializarComponentes();
+        cargarClientes();
     }
 
     private void configurarPanel() {
         setLayout(new BorderLayout(10, 10));
         setBackground(ConfiguracionApp.COLOR_FONDO);
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        setBorder(BorderFactory.createEmptyBorder(
+                15, 15, 15, 15
+        ));
     }
 
     private void inicializarComponentes() {
 
         JLabel lblTitulo = new JLabel("GESTIÓN DE CLIENTES");
+
         lblTitulo.setFont(ConfiguracionApp.FUENTE_TITULO);
         lblTitulo.setForeground(ConfiguracionApp.COLOR_PRIMARIO);
 
-        add(lblTitulo, BorderLayout.NORTH);
+        lblTitulo.setBorder(
+                BorderFactory.createEmptyBorder(0, 0, 10, 0)
+        );
 
-        // Formulario de clientes.
-        JPanel panelFormulario = new JPanel(new GridLayout(4, 2, 10, 10));
-        panelFormulario.setBackground(ConfiguracionApp.COLOR_BLANCO);
+        // FORMULARIO
+        JPanel panelFormulario = new JPanel(
+                new GridLayout(3, 2, 10, 12)
+        );
+
+        panelFormulario.setBackground(
+                ConfiguracionApp.COLOR_BLANCO
+        );
+
         panelFormulario.setBorder(
-                BorderFactory.createTitledBorder("Datos del cliente"));
+                BorderFactory.createTitledBorder("Datos del cliente")
+        );
 
-        txtNombre = new JTextField();
-        txtDni = new JTextField();
-        txtTelefono = new JTextField();
-        txtCorreo = new JTextField();
+        txtNombre = new JTextField(20);
+        txtDni = new JTextField(20);
+        txtTelefono = new JTextField(20);
 
         panelFormulario.add(new JLabel("Nombre completo:"));
         panelFormulario.add(txtNombre);
@@ -67,12 +87,11 @@ public class ClientePanel extends JPanel {
         panelFormulario.add(new JLabel("Teléfono:"));
         panelFormulario.add(txtTelefono);
 
-        panelFormulario.add(new JLabel("Correo electrónico:"));
-        panelFormulario.add(txtCorreo);
-
-        // Botones.
+        // BOTONES
         JPanel panelBotones = new JPanel(
-                new FlowLayout(FlowLayout.CENTER, 10, 10));
+                new FlowLayout(FlowLayout.CENTER, 10, 10)
+        );
+
         panelBotones.setBackground(ConfiguracionApp.COLOR_FONDO);
 
         btnAgregar = new JButton("Agregar");
@@ -88,6 +107,14 @@ public class ClientePanel extends JPanel {
         btnLimpiar.setBackground(ConfiguracionApp.COLOR_SECUNDARIO);
         btnLimpiar.setForeground(Color.WHITE);
 
+        btnAgregar.setFocusPainted(false);
+        btnEliminar.setFocusPainted(false);
+        btnLimpiar.setFocusPainted(false);
+
+        btnAgregar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnEliminar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnLimpiar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
         btnAgregar.addActionListener(e -> agregarCliente());
         btnEliminar.addActionListener(e -> eliminarCliente());
         btnLimpiar.addActionListener(e -> limpiarCampos());
@@ -96,19 +123,17 @@ public class ClientePanel extends JPanel {
         panelBotones.add(btnEliminar);
         panelBotones.add(btnLimpiar);
 
-        JPanel panelSuperior = new JPanel(new BorderLayout(5, 10));
+        // PANEL SUPERIOR
+        JPanel panelSuperior = new JPanel(new BorderLayout(5, 5));
         panelSuperior.setBackground(ConfiguracionApp.COLOR_FONDO);
+
+        panelSuperior.add(lblTitulo, BorderLayout.NORTH);
         panelSuperior.add(panelFormulario, BorderLayout.CENTER);
         panelSuperior.add(panelBotones, BorderLayout.SOUTH);
 
-        add(panelSuperior, BorderLayout.CENTER);
-
-        // Tabla de clientes.
+        // TABLA
         String[] columnas = {
-            "Nombre",
-            "DNI",
-            "Teléfono",
-            "Correo electrónico"
+            "ID", "Nombre", "DNI", "Teléfono"
         };
 
         modeloTabla = new DefaultTableModel(columnas, 0) {
@@ -119,22 +144,39 @@ public class ClientePanel extends JPanel {
         };
 
         tablaClientes = new JTable(modeloTabla);
-        tablaClientes.setRowHeight(25);
+        tablaClientes.setRowHeight(28);
+
+        tablaClientes.setSelectionMode(
+                ListSelectionModel.SINGLE_SELECTION
+        );
+
+        tablaClientes.getTableHeader().setFont(
+                ConfiguracionApp.FUENTE_BOTON
+        );
+
+        tablaClientes.getTableHeader().setReorderingAllowed(false);
+
+        // Ocultar el ID sin eliminarlo del modelo.
+        tablaClientes.removeColumn(
+                tablaClientes.getColumnModel().getColumn(0)
+        );
 
         JScrollPane scroll = new JScrollPane(tablaClientes);
-        scroll.setBorder(
-                BorderFactory.createTitledBorder("Listado de clientes"));
 
-        add(scroll, BorderLayout.SOUTH);
+        scroll.setBorder(
+                BorderFactory.createTitledBorder("Listado de clientes")
+        );
+
+        add(panelSuperior, BorderLayout.NORTH);
+        add(scroll, BorderLayout.CENTER);
     }
 
-    // Agrega un cliente a la tabla.
+    // AGREGAR CLIENTE A LA BASE DE DATOS
     private void agregarCliente() {
 
         String nombre = txtNombre.getText().trim();
         String dni = txtDni.getText().trim();
         String telefono = txtTelefono.getText().trim();
-        String correo = txtCorreo.getText().trim();
 
         if (!Validador.esTextoValido(nombre)) {
             mostrarMensaje("Ingrese el nombre del cliente.");
@@ -154,65 +196,107 @@ public class ClientePanel extends JPanel {
             return;
         }
 
-        if (!Validador.esCorreoValido(correo)) {
-            mostrarMensaje("Ingrese un correo electrónico válido.");
-            txtCorreo.requestFocus();
-            return;
-        }
-
-        // Evita registrar DNI repetidos.
-        for (int i = 0; i < modeloTabla.getRowCount(); i++) {
-            if (modeloTabla.getValueAt(i, 1).toString().equals(dni)) {
+        try {
+            if (clienteDAO.buscarPorDni(dni).isPresent()) {
                 mostrarMensaje("Ya existe un cliente con ese DNI.");
+                txtDni.requestFocus();
                 return;
             }
+
+            Cliente cliente = new Cliente(nombre, dni, telefono);
+
+            clienteDAO.guardar(cliente);
+
+            cargarClientes();
+
+            mostrarMensaje("Cliente registrado correctamente.");
+
+            limpiarCampos();
+
+        } catch (RuntimeException ex) {
+            mostrarError("No se pudo registrar el cliente.", ex);
         }
-
-        modeloTabla.addRow(new Object[]{
-            nombre,
-            dni,
-            telefono,
-            correo
-        });
-
-        mostrarMensaje("Cliente agregado a la tabla.");
-        limpiarCampos();
     }
 
-    // Elimina el cliente seleccionado.
+    // CARGAR CLIENTES DESDE SQLITE
+    private void cargarClientes() {
+
+        try {
+            modeloTabla.setRowCount(0);
+
+            for (Cliente cliente : clienteDAO.listarTodos()) {
+
+                modeloTabla.addRow(new Object[]{
+                    cliente.getIdCliente(),
+                    cliente.getNombre(),
+                    cliente.getDni(),
+                    cliente.getTelefono()
+                });
+            }
+
+        } catch (RuntimeException ex) {
+            mostrarError("No se pudieron cargar los clientes.", ex);
+        }
+    }
+
+    // ELIMINAR CLIENTE DE LA BASE DE DATOS
     private void eliminarCliente() {
 
-        int fila = tablaClientes.getSelectedRow();
+        int filaSeleccionada = tablaClientes.getSelectedRow();
 
-        if (fila == -1) {
+        if (filaSeleccionada == -1) {
             mostrarMensaje("Seleccione un cliente de la tabla.");
             return;
         }
+
+        int filaModelo = tablaClientes.convertRowIndexToModel(
+                filaSeleccionada
+        );
+
+        int idCliente = Integer.parseInt(
+                modeloTabla.getValueAt(filaModelo, 0).toString()
+        );
 
         int respuesta = JOptionPane.showConfirmDialog(
                 this,
                 "¿Está seguro de eliminar este cliente?",
                 "Confirmar eliminación",
-                JOptionPane.YES_NO_OPTION
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
         );
 
         if (respuesta == JOptionPane.YES_OPTION) {
-            modeloTabla.removeRow(fila);
-            mostrarMensaje("Cliente eliminado de la tabla.");
+
+            try {
+                clienteDAO.eliminar(idCliente);
+
+                cargarClientes();
+
+                mostrarMensaje("Cliente eliminado correctamente.");
+
+            } catch (RuntimeException ex) {
+                mostrarError(
+                        "No se pudo eliminar el cliente. "
+                        + "Puede estar relacionado con contratos.",
+                        ex
+                );
+            }
         }
     }
 
-    // Limpia el formulario.
+    // LIMPIAR CAMPOS
     public void limpiarCampos() {
+
         txtNombre.setText("");
         txtDni.setText("");
         txtTelefono.setText("");
-        txtCorreo.setText("");
-        txtNombre.requestFocus();
+
+        txtNombre.requestFocusInWindow();
     }
 
-    // Muestra mensajes.
+    // MENSAJES
     private void mostrarMensaje(String mensaje) {
+
         JOptionPane.showMessageDialog(
                 this,
                 mensaje,
@@ -221,6 +305,17 @@ public class ClientePanel extends JPanel {
         );
     }
 
+    private void mostrarError(String mensaje, RuntimeException ex) {
+
+        JOptionPane.showMessageDialog(
+                this,
+                mensaje + "\nDetalle: " + ex.getMessage(),
+                "Error de AutoRenta Express",
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+
+    // ACCESO A LA TABLA
     public JTable getTablaClientes() {
         return tablaClientes;
     }
